@@ -1,0 +1,165 @@
+<jittershader name="jit.fx.ge.pattern.voronoi">
+  <param name="pos" type="vec3" state="POSITION" />
+  <param name="tex0" type="int" default="0" />
+  <param name="texDim" type="vec2" state="TEXDIM0" />
+  <param name="radius" type="float" default="0.3" />
+  <param name="threshold" type="float" default="0.5" />
+  <param name="farClip" type="float" state="FAR_CLIP" />
+  <param name="texDim" type="vec2" state="TEXDIM0" />
+  <param name="randomness" type="float" default="0.01" />
+  <param name="num_edges" type="int" default="25" />
+  <param name="start_angle" type="float" default="0.0" />
+  <param name="complete" type="float" default="1.0" />
+  <param name="outdim" type="vec2" default="1920 1080" />
+  <language name="glsl" version="1.5">
+    <bind param="pos" program="vp" />
+    <bind param="tex0" program="gp" />
+    <bind param="texDim" program="vp" />
+    <bind param="radius" program="gp" />
+    <bind param="threshold" program="gp" />
+    <bind param="farClip" program="gp" />
+    <bind param="texDim" program="gp" />
+    <bind param="randomness" program="gp" />
+    <bind param="num_edges" program="gp" />
+    <bind param="start_angle" program="gp" />
+    <bind param="complete" program="gp" />
+    <bind param="outdim" program="gp" />
+    <program name="vp" type="vertex">
+<![CDATA[
+#version 330 core
+in vec3 pos;
+
+uniform vec2 texDim;
+
+out jit_PerVertex {
+  flat vec2 rectPos;  
+  flat vec2 uv;
+} jit_out;
+
+void main() { 
+  gl_Position = vec4(pos.xy*2 - 1, 0., 1.); 
+  jit_out.uv = vec2(pos.x, 1 - pos.y);
+  jit_out.rectPos = jit_out.uv * texDim;
+
+}
+]]>
+    </program>
+    <program name="gp" type="geometry">
+<![CDATA[
+#version 330 core
+#define TWOPI 6.2831853072
+
+layout (points) in;
+layout (triangle_strip, max_vertices=128) out;
+
+in jit_PerVertex {
+  flat vec2 rectPos;   
+  flat vec2 uv;
+} jit_in[];
+
+out jit_PerVertex {
+  flat float id;  
+  smooth float dist;
+  flat vec2 center;
+};
+
+uniform sampler2DRect tex0;
+uniform int frame;
+uniform float radius;
+uniform float threshold;
+uniform float farClip;
+uniform vec2 texDim;
+uniform float randomness;
+uniform int num_edges;
+uniform float start_angle;
+uniform float complete;
+uniform vec2 outdim;
+
+//Random functions
+uint wang_hash(inout uint seed)
+{
+    seed = uint(seed ^ uint(61)) ^ uint(seed >> uint(16));
+    seed *= uint(9);
+    seed = seed ^ (seed >> 4);
+    seed *= uint(0x27d4eb2d);
+    seed = seed ^ (seed >> 15);
+    return seed;
+}
+ 
+float RandomFloat01(inout uint seed)
+{
+    return float(wang_hash(seed)) / 4294967296.0;
+}
+
+uint getRandSeed(){ 
+  return  uint(jit_in[0].rectPos.x*3772) + uint(jit_in[0].rectPos.y*78223) + uint(26699); 
+}
+
+float luma(vec3 x){ return dot(x, vec3(0.299, 0.587, 0.114)); }
+
+void main() {
+
+  vec2 currRectPos = jit_in[0].rectPos.xy;
+  id = floor(jit_in[0].uv.x*outdim.x) + floor(jit_in[0].uv.y*outdim.y)*outdim.x;
+
+  float lum = luma(texture(tex0, currRectPos).rgb);
+
+  if(lum < threshold) return;
+
+  float ratio = texDim.x / texDim.y;
+
+  float angleStep = TWOPI / float(num_edges);
+  float angle = start_angle;
+  vec2 offset0, offset1;
+
+  offset1 = vec2(radius/ratio, 0);
+
+  //add pos jittering
+  uint seed = getRandSeed();
+  vec4 pos = gl_in[0].gl_Position;
+  pos.x += randomness * (RandomFloat01(seed)*2 - 1)/ratio;
+  pos.y += randomness * (RandomFloat01(seed)*2 - 1);
+  center = pos.xy;
+
+  for(int i = num_edges; i >= int(mix(float(num_edges), 0.0, complete)); i--){
+
+    gl_Position = pos;
+    dist = 0;
+    EmitVertex();
+
+    angle += angleStep;
+    offset0 = offset1;
+    offset1 = vec2(cos(angle)/ratio, sin(angle))*radius;
+
+    gl_Position = pos + vec4(offset0, 1, 0);
+    dist = radius;
+    EmitVertex();    
+
+    gl_Position = pos + vec4(offset1, 1, 0);
+    EmitVertex();   
+
+    EndPrimitive(); 
+
+  }
+}
+]]>
+    </program>
+    <program name="fp" type="fragment">
+<![CDATA[
+#version 330 core
+
+in jit_PerVertex {
+  flat float id;
+  smooth float dist;
+  flat vec2 center;
+} jit_in;
+
+out vec4 color;
+
+void main() {
+  color = vec4(jit_in.id,jit_in.dist,jit_in.center);
+} 
+]]>
+    </program>
+  </language>
+</jittershader>

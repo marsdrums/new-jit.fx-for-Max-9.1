@@ -1,0 +1,78 @@
+<jittershader name="jit.fx.cf.kuwahara.gaussian_h">
+	<description>Applies horizontal gaussian blur </description>
+	<param name="tex0" type="int" default="0" />
+	<param name="textureMatrix0" type="mat4" state="TEXTURE0_MATRIX" />
+	<param name="uv" type="vec2" state="TEXCOORD" />
+	<param name="kernel_radius" type="float" default="4.0" />
+	<param name="texDim" type="vec2" state="TEXDIM0" />
+	<language name="glsl" version="1.5">
+		<bind param="tex0" program="fp" />
+		<bind param="textureMatrix0" program="vp" />
+		<bind param="uv" program="vp" />
+		<bind param="kernel_radius" program="fp" />
+		<bind param="texDim" program="fp" />
+		<program name="vp" type="vertex"  >
+<![CDATA[
+#version 330 core
+
+in vec2 uv;
+out jit_PerVertex {
+	vec2 uv;
+} jit_out;
+
+uniform mat4 textureMatrix0;
+
+void main(void) {
+	gl_Position = vec4(uv*2-1, 0.0, 1.0);
+	jit_out.uv = vec2(textureMatrix0*vec4(uv, 0., 1.));
+}
+]]>
+</program>
+
+<program name="fp" type="fragment"  >
+<![CDATA[
+#version 330 core
+#define PI 3.14159265358979323846
+
+in jit_PerVertex {
+	vec2 uv;
+} jit_in;
+layout (location = 0) out vec4 outColor;
+
+uniform samplerJit0 tex0;
+uniform float kernel_radius;
+uniform vec2 texDim;
+
+float gaussian(float pos) {
+
+	return 0.1994711402 * exp(-(pos * pos) * 0.125);
+
+	//sigma = 2;
+	//sigma *= sigma;
+	//sigma *= 2;
+    //return (1.0 / sqrt(PI * sigma)) * exp(-(pos * pos) / sigma);
+}
+
+void main(void) {
+
+    ivec2 iuv = ivec2(jit_in.uv);
+
+    vec3 col = vec3(0);
+    float kernelSum = 0.0;
+    ivec2 upperLimit = ivec2(texDim-1);
+
+    for (float x = -kernel_radius; x <= kernel_radius; x += 1.0) {
+        vec3 c = texelFetch(tex0 , clamp(iuv + ivec2(x, 0), ivec2(0,0), upperLimit)).xyz;
+        float gauss = gaussian(x);
+
+        col += c*gauss;
+        kernelSum += gauss;
+    }
+
+    outColor = vec4(col / kernelSum, 1.0);
+
+}
+]]>
+</program>
+</language>
+</jittershader>

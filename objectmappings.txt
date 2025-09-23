@@ -1,0 +1,11 @@
+max define jit.fx.cf.tiltshift v8 jit.fx.cf.tiltshift.js;
+max define jit.fx.cf.kuwahara v8 jit.fx.cf.kuwahara.js;
+
+max define jit.fx.camera v8 jit.fx.camera.js;
+
+max define jit.fx.ge.lineinterp v8 jit.fx.ge.lineinterp.js;
+max define jit.fx.ge.pattern v8 jit.fx.ge.pattern.js;
+
+max define jit.fx.crt jit.gl.slab @file jit.fx.crt.jxs @inputs 1;
+max define jit.fx.vhs jit.gl.slab @file jit.fx.vhs.jxs @inputs 1;
+

@@ -1,0 +1,239 @@
+<jittershader name="jit.fx.crt">
+	<description> Cathode Ray Tube (CRT) television simulator </description>
+	<param name="tex0" type="int" default="0" />
+	<param name="textureMatrix0" type="mat4" state="TEXTURE0_MATRIX" />
+	<param name="uv" type="vec2" state="TEXCOORD" />
+	<param name="time" type="float" state="TIME" />
+	<param name="texDim" type="vec2" state="TEXDIM0" />
+
+	//params
+	<param name="warp_amount" type="float" default="0.1" /> 
+	<param name="noise_amount" type="float" default="0.03" /> 
+	<param name="interference_amount" type="float" default="0.2" /> 
+	<param name="grille_amount" type="float" default="0.1" /> 
+	<param name="vignette_amount" type="float" default="0.6" /> 
+	<param name="vignette_intensity" type="float" default="0.4" /> /
+	<param name="aberation_amount" type="float" default="0.5" /> 
+	<param name="roll_line_amount" type="float" default="0.3" /> 
+	<param name="roll_speed" type="float" default="1.0" /> 
+	<param name="scan_line_strength" type="float" default="8.0" /> /
+	<param name="grille_scale" type="vec2" default="0.15 0.15" />
+	<language name="glsl" version="1.5">
+		<bind param="tex0" program="fp" />
+		<bind param="textureMatrix0" program="vp" />
+		<bind param="uv" program="vp" />
+		<bind param="time" program="fp" />
+		<bind param="texDim" program="fp" />
+		<bind param="texDim" program="vp" />
+
+		//params
+		<bind param="warp_amount" program="fp" />
+		<bind param="noise_amount" program="fp" />
+		<bind param="interference_amount" program="fp" />
+		<bind param="grille_amount" program="fp" />
+		<bind param="vignette_amount" program="fp" />
+		<bind param="vignette_intensity" program="fp" />
+		<bind param="aberation_amount" program="fp" />
+		<bind param="roll_line_amount" program="fp" />
+		<bind param="roll_speed" program="fp" />
+		<bind param="scan_line_strength" program="fp" />
+		<bind param="grille_scale" program="fp" />
+
+		<program name="vp" type="vertex"  >
+<![CDATA[
+#version 330 core
+
+in vec2 uv;
+uniform vec2 grille_scale;
+uniform vec2 texDim;
+
+out jit_PerVertex {
+	smooth vec2 pix;
+	smooth vec2 uv;
+	flat vec2 resolution;
+	flat vec2 invResolution;
+} jit_out;
+
+uniform mat4 textureMatrix0;
+
+void main(void) {
+	gl_Position = vec4(uv*2 - 1, 0.0, 1.0);
+	jit_out.pix = vec2(textureMatrix0*vec4(uv, 0., 1.));
+	jit_out.uv = vec2(uv.x, 1 - uv.y);
+	jit_out.resolution = texDim * grille_scale;
+	jit_out.invResolution = 1 / jit_out.resolution;
+}
+]]>
+</program>
+
+//Based on https://godotshaders.com/shader/realistic-crt-shader/
+
+<program name="fp" type="fragment"  >
+<![CDATA[
+#version 330 core
+#define PI 3.1415926535898
+#define PIdiv3 1.0471975512
+#define TWOPIdiv3 2.09439510239
+
+in jit_PerVertex {
+	smooth vec2 pix;
+	smooth vec2 uv;
+	flat vec2 resolution;
+	flat vec2 invResolution;
+} jit_in;
+layout (location = 0) out vec4 outColor;
+
+uniform samplerJit0 tex0;
+uniform float time;
+uniform vec2 texDim;
+uniform float warp_amount;
+uniform float noise_amount;
+uniform float interference_amount;
+uniform float grille_amount;
+uniform float vignette_amount;
+uniform float vignette_intensity;
+uniform float aberation_amount;
+uniform float roll_line_amount;
+uniform float roll_speed;
+uniform float scan_line_strength;
+
+float random(vec2 uv){
+    return fract(cos(uv.x * 83.4827 + uv.y * 92.2842) * 43758.5453123);
+}
+
+vec3 fetch_pixel(vec2 uv, vec2 off){
+	vec2 pos = (floor(uv * jit_in.resolution + off) + vec2(0.5)) * jit_in.invResolution;
+
+	float noise = 0.0;
+	if(noise_amount > 0.0){
+		noise = random(pos + fract(time)) * noise_amount;
+	}
+
+	if(max(abs(pos.x - 0.5), abs(pos.y - 0.5)) > 0.5){
+		return vec3(0.0, 0.0, 0.0);
+	}
+
+	vec3 clr = texture(tex0, pos*texDim).rgb + noise;
+	return clr;
+}
+
+// Distance in emulated pixels to nearest texel.
+vec2 Dist(vec2 pos){ 
+	pos = pos * jit_in.resolution;
+	return - ((pos - floor(pos)) - vec2(0.5));
+}
+
+// 1D Gaussian.
+float Gaus(float pos, float scale){ return exp2(scale * pos * pos); }
+
+// 3-tap Gaussian filter along horz line.
+vec3 Horz3(vec2 pos, float off){
+	vec3 b = fetch_pixel(pos, vec2(-1.0, off));
+	vec3 c = fetch_pixel(pos, vec2( 0.0, off));
+	vec3 d = fetch_pixel(pos, vec2( 1.0, off));
+	float dst = Dist(pos).x;
+	
+	// Convert distance to weight.
+	float wb = Gaus(dst - 1.0, -2);
+	float wc = Gaus(dst + 0.0, -2);
+	float wd = Gaus(dst + 1.0, -2);
+	
+	// Return filtered sample.
+	return (b * wb + c * wc + d * wd) / (wb + wc + wd);
+}
+
+
+// Return scanline weight.
+float Scan(vec2 pos, float off){
+	float dst = Dist(pos).y;
+	
+	return Gaus(dst + off, -scan_line_strength);
+}
+
+// Allow nearest three lines to effect pixel.
+vec3 Tri(vec2 pos){
+	vec3 clr = fetch_pixel(pos, vec2(0.0));
+
+	vec3 a = Horz3(pos,-1.0);
+	vec3 b = Horz3(pos, 0.0);
+	vec3 c = Horz3(pos, 1.0);
+
+	float wa = Scan(pos,-1.0);
+	float wb = Scan(pos, 0.0);
+	float wc = Scan(pos, 1.0);
+
+	return a * wa + b * wb + c * wc;
+}
+
+// Takes in the UV and warps the edges, creating the spherized effect
+vec2 warp(vec2 uv){
+	vec2 delta = uv - 0.5;
+	float delta2 = dot(delta.xy, delta.xy);
+	float delta4 = delta2 * delta2;
+	float delta_offset = delta4 * warp_amount;
+	
+	vec2 warped = uv + delta * delta_offset;
+	return (warped - 0.5) / mix(1.0,1.2,warp_amount/5.0) + 0.5;
+}
+
+float vignette(vec2 uv){
+	uv *= 1.0 - uv.xy;
+	float vignette = uv.x * uv.y * 15.0;
+	return pow(vignette, vignette_intensity * vignette_amount);
+}
+
+float floating_mod(float a, float b){
+	return a - b * floor(a/b);
+}
+
+vec3 grille(vec2 uv){
+	float r = smoothstep(0.5, 0.8, cos(uv.x*TWOPIdiv3 - PIdiv3));
+	float g = smoothstep(0.5, 0.8, cos(uv.x*TWOPIdiv3 + PIdiv3));
+	float b = smoothstep(0.5, 0.8, cos(uv.x*TWOPIdiv3 + PI));
+	return mix(vec3(1.0), vec3(r,g,b), grille_amount);
+}
+
+float roll_line(vec2 uv){
+	float x = uv.y * 3.0 - time * roll_speed;
+	float f = cos(x) * cos(x * 2.35 + 1.1) * cos(x * 4.45 + 2.3);
+	float roll_line = smoothstep(0.5, 0.9, f);
+	return roll_line * roll_line_amount;
+}
+
+void main(void) {
+	vec2 pix = jit_in.pix;
+	vec2 pos = warp(jit_in.uv);
+	
+	float line = 0.0;
+	if(roll_line_amount > 0.0){
+		line = roll_line(pos);
+	}
+
+	vec2 sq_pix = (floor(pos * jit_in.resolution) + vec2(0.5)) * jit_in.invResolution;
+	if(interference_amount + roll_line_amount > 0.0){
+		float interference = random(sq_pix.yy + fract(time));
+		pos.x += (interference * (interference_amount + line * 6.0)) * jit_in.invResolution.x;
+	}
+
+	vec3 clr = Tri(pos);
+	if(aberation_amount > 0.0){
+		float chromatic = aberation_amount + line * 2.0;
+		vec2 chromatic_x = vec2(chromatic,0.0) * jit_in.invResolution.x;
+		vec2 chromatic_y = vec2(0.0, chromatic*0.5) * jit_in.invResolution.y;
+		float r = Tri(pos - chromatic_x).r;
+		float g = Tri(pos + chromatic_y).g;
+		float b = Tri(pos + chromatic_x).b;
+		clr = vec3(r,g,b);
+	}
+	
+	if(grille_amount > 0.0)clr *= grille(pix);
+	clr *= 1.6 + line * 3.0 + grille_amount * 2.0;
+	if(vignette_amount > 0.0)clr *= vignette(pos);
+	
+	outColor.rgb = clr;
+	outColor.a = 1.0;
+}
+]]>
+</program>
+</language>
+</jittershader>

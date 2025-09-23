@@ -1,0 +1,128 @@
+<jittershader name="jit.fx.lineinterp.find.start.end">
+  <param name="pos" type="vec3" state="POSITION" />
+  <param name="tex0" type="int" default="0" />
+  <param name="texDim" type="vec2" state="TEXDIM0" />
+  <param name="dimmode" type="int" default="0" />
+  <language name="glsl" version="1.5">
+    <bind param="pos" program="vp" />
+    <bind param="tex0" program="gp" />
+    <bind param="texDim" program="vp" />
+    <bind param="texDim" program="gp" />
+    <bind param="dimmode" program="gp" />
+    <program name="vp" type="vertex">
+<![CDATA[
+#version 330 core
+in vec3 pos;
+
+uniform vec2 texDim;
+
+out jit_PerVertex {
+  flat vec2 rectPos;  
+} jit_out;
+
+void main() { 
+  gl_Position = vec4(pos.xy*2 - 1, 0., 1.); 
+  jit_out.rectPos = vec2(pos.x, 1 - pos.y) * texDim;
+
+}
+]]>
+    </program>
+    <program name="gp" type="geometry">
+<![CDATA[
+#version 330 core
+#define TWOPI 6.2831853072
+
+layout (points) in;
+layout (line_strip, max_vertices=2) out;
+
+in jit_PerVertex {
+  flat vec2 rectPos;   
+} jit_in[];
+
+out jit_PerVertex {
+  flat vec2 end;
+};
+
+uniform sampler2DRect tex0;
+uniform int dimmode;
+uniform vec2 texDim;
+
+vec2 rayExitBox(vec2 origin, vec2 direction) {
+    // Box bounds
+    vec2 minBounds = vec2(-1.0, -1.0);
+    vec2 maxBounds = vec2(1.0, 1.0);
+    
+    // Calculate intersection times for x and y planes
+    float tMaxX = (maxBounds.x - origin.x) / direction.x;
+    float tMaxY = (maxBounds.y - origin.y) / direction.y;
+    
+    // Find the maximum of the minimum intersection times (where the ray exits the box)
+    float tExit = min(tMaxX, tMaxY);
+    
+    // Compute the exit point using the ray equation: P = origin + t * direction
+    return origin + tExit * direction;
+}
+
+
+void main() {
+
+  end = texelFetch(tex0, ivec2(jit_in[0].rectPos)).ba;
+
+  if(end.x == -1.0) return;
+  vec4 posA, posB;
+  vec2 dir;
+  float z;
+
+  switch (dimmode) {
+    case 0:
+      posA = vec4(end.xyx, 1.0);
+      posB = vec4(-1.0, end.yx, 1.0);
+      break;
+    case 1:
+      posA = vec4(end.xyy, 1.0);
+      posB = vec4(end.x, -1.0, end.y, 1.0);
+      break;
+    case 2:
+      dir = normalize(vec2(texDim.y/texDim.x,1));
+      z = 1 - (end.y*0.5 + 0.5);//1 - ((end.x*0.5 + 0.5) + (end.y*0.5 + 0.5))*0.5;
+      posA = vec4(end.xy, z, 1.0);
+      posB.xy = rayExitBox(posA.xy, dir);
+      posB.zw = vec2((posB.x+posB.y)*0.5, 1.0);
+      break;
+    case 3:
+      dir = normalize(vec2(texDim.y/texDim.x,-1));
+      z = (-end.y*0.5 + 0.5);//1 - ((-end.x*0.5 + 0.5) + (end.y*0.5 + 0.5))*0.5;
+      posA = vec4(end.xy, z, 1.0);
+      posB.xy = rayExitBox(posA.xy, dir);
+      posB.zw = vec2((posB.x+posB.y)*0.5, 1.0);
+      break;
+  }
+
+  gl_Position = posA;
+  EmitVertex();    
+
+  gl_Position = posB;
+  EmitVertex();   
+
+  EndPrimitive(); 
+
+}
+]]>
+    </program>
+    <program name="fp" type="fragment">
+<![CDATA[
+#version 330 core
+
+in jit_PerVertex {
+  flat vec2 end;
+} jit_in;
+
+out vec4 color;
+
+void main() {
+  color = vec4(jit_in.end, 0.0, 1.0);
+} 
+]]>
+    </program>
+  </language>
+</jittershader>
