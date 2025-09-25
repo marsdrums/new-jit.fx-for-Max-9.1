@@ -1,7 +1,9 @@
 <jittershader name="jit.fx.ge.pattern.delaunay">
   <param name="pos" type="vec3" state="POSITION" />
   <param name="tex0" type="int" default="0" />
+  <param name="tex1" type="int" default="1" />
   <param name="texDim" type="vec2" state="TEXDIM0" />
+  <param name="texDim1" type="vec2" state="TEXDIM1" />
   <param name="radius" type="float" default="0.3" />
   <param name="threshold" type="float" default="0.9" />
   <param name="farClip" type="float" state="FAR_CLIP" />
@@ -11,12 +13,15 @@
   <param name="start_angle" type="float" default="0.0" />
   <param name="complete" type="float" default="1.0" />
   <param name="outdim" type="vec2" default="1920 1080" />
-  <param name="line_width" type="float" default="1.0" />
+  <param name="line_width" type="float" default="2.0" />
   <param name="line_fade" type="float" default="0.0" />
+  <param name="colorize" type="int" default="1" />
   <language name="glsl" version="1.5">
     <bind param="pos" program="vp" />
     <bind param="tex0" program="gp" />
+    <bind param="tex1" program="gp" />
     <bind param="texDim" program="vp" />
+    <bind param="texDim1" program="gp" />
     <bind param="radius" program="gp" />
     <bind param="threshold" program="gp" />
     <bind param="farClip" program="gp" />
@@ -28,6 +33,7 @@
     <bind param="outdim" program="gp" />
     <bind param="line_width" program="gp" />
     <bind param="line_fade" program="gp" />
+    <bind param="colorize" program="gp" />
     <program name="vp" type="vertex">
 <![CDATA[
 #version 330 core
@@ -38,12 +44,14 @@ uniform vec2 texDim;
 out jit_PerVertex {
   flat vec2 rectPos;  
   flat vec2 uv;
+  flat float ratio;
 } jit_out;
 
 void main() { 
   gl_Position = vec4(pos.xy*2 - 1, 0., 1.); 
   jit_out.uv = pos.xy;//vec2(pos.x, 1 - pos.y);
   jit_out.rectPos = pos.xy * texDim + 0.5;
+  jit_out.ratio = texDim.x / texDim.y;
 
 }
 ]]>
@@ -59,6 +67,7 @@ layout (triangle_strip, max_vertices=4) out;
 in jit_PerVertex {
   flat vec2 rectPos;   
   flat vec2 uv;
+  flat float ratio;
 } jit_in[];
 
 out jit_PerVertex {
@@ -66,9 +75,12 @@ out jit_PerVertex {
   smooth float dist;
   //flat vec2 center;
   smooth vec4 color;
+  smooth vec2 corner;
 };
 
 uniform sampler2DRect tex0;
+uniform sampler2DRect tex1;
+uniform vec2 texDim1;
 uniform int frame;
 uniform float radius;
 uniform float threshold;
@@ -81,6 +93,7 @@ uniform float complete;
 uniform vec2 outdim;
 uniform float line_width;
 uniform float line_fade;
+uniform int colorize;
 
 void main() {
 
@@ -88,11 +101,11 @@ void main() {
     vec2 uv = (gl_in[0].gl_Position.xy * 0.5 + 0.5)*texDim;
     vec4 lookup0 = texelFetch(tex0, ivec2(uv));
 
-    float ratio = texDim.x / texDim.y;
     float id0 = lookup0.r;
 
     if(id0 == 0.0) return; //if background
 
+    float ratio = texDim.x / texDim.y;
     float dist0 = lookup0.g;
     vec2 center0 = lookup0.ba;
     vec2 dir = normalize(gl_in[0].gl_Position.xy*vec2(1,-1) - center0);
@@ -117,20 +130,29 @@ void main() {
 
 */
     float centerDist = distance(center0, center1);
-    color = vec4(1/(1+centerDist*line_fade));
+    float distDamp = 1/(1+centerDist*line_fade);
 
     vec2 width = normalize(cross(normalize(vec3(center0 - center1, 0.0)), vec3(0.0, 0.0, 1.0))).xy*0.001 * line_width;
+    width.y *= jit_in[0].ratio;
 
+    color = colorize > 0 ? texture(tex1, (center0.xy*vec2(0.5, -0.5) + 0.5)*texDim1) : vec4(1.0);
+    color *= distDamp;
     gl_Position = vec4(center0 - width, 0.0, 1.0);
+    corner = vec2(-1,-1);
     EmitVertex();
 
     gl_Position = vec4(center0 + width, 0.0, 1.0);
+    corner = vec2(+1,-1);
     EmitVertex();  
 
+    color = colorize > 0 ? texture(tex1, (center1.xy*vec2(0.5, -0.5) + 0.5)*texDim1) : vec4(1.0);
+    color *= distDamp;
     gl_Position = vec4(center1 - width, 0.0, 1.0);
+    corner = vec2(-1,+1);
     EmitVertex();
 
     gl_Position = vec4(center1 + width, 0.0, 1.0);
+    corner = vec2(+1,+1);
     EmitVertex();    
 
     EndPrimitive(); 
@@ -148,12 +170,17 @@ in jit_PerVertex {
   flat float id;
   smooth float dist;
   //flat vec2 center;
+  smooth vec2 corner;
 } jit_in;
 
 out vec4 color;
 
 void main() {
-  color = jit_in.color;
+  color.rgb = jit_in.color.rgb;
+  float d = 1 - abs(jit_in.corner.x);
+  d *= d;
+  d *= d;
+  color.a = smoothstep(0.0, 1.0, d);
 } 
 ]]>
     </program>
