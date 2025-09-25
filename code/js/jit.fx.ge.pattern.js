@@ -121,10 +121,17 @@ function setcomplete(v){
 	shader_vor.param("complete", complete);
 }
 
-var draw_mode = 0.0;
+var draw_mode = 0;
 declareattribute("draw_mode", null, "setdraw_mode", 0);
 function setdraw_mode(v){ 
 	draw_mode = Math.max(0, Math.min(3, v));
+	if(draw_mode >= 2){
+		slab_resolve.param("colorize", 0);
+		shader_del.param("colorize", 0);		
+	} else {
+		slab_resolve.param("colorize", colorize);
+		shader_del.param("colorize", colorize);
+	}
 }
 
 var line_growth = 0.0;
@@ -153,9 +160,10 @@ var colorize = 1;
 declareattribute("colorize", { style: "onoff", setter: "setcolorize", label: "Enable colors"});
 function setcolorize(v){
 	colorize = v;
-	slab_resolve.param("colorize", colorize);
-	shader_del.param("colorize", colorize);
-	post(colorize);
+	if(draw_mode < 2){
+		slab_resolve.param("colorize", colorize);
+		shader_del.param("colorize", colorize);
+	}
 }
 
 var outdim = [1920, 1080];
