@@ -10,12 +10,40 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 101.0, 102.0, 1000.0, 780.0 ],
+		"rect" : [ 101.0, 102.0, 1160.0, 586.0 ],
 		"gridsize" : [ 15.0, 15.0 ],
 		"assistshowspatchername" : 0,
 		"commentary" : "",
 		"showcommentary" : 0,
 		"boxes" : [ 			{
+				"box" : 				{
+					"attr" : "listmode",
+					"id" : "obj-47",
+					"lock" : 1,
+					"maxclass" : "attrui",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"parameter_enable" : 0,
+					"patching_rect" : [ 79.0, 95.0, 98.0, 22.0 ],
+					"text_width" : 72.5
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-45",
+					"items" : [ "hue", ",", "saturation", ",", "luminance", ",", "red", ",", "green", ",", "blue", ",", "alpha", ",", "edge" ],
+					"maxclass" : "umenu",
+					"numinlets" : 1,
+					"numoutlets" : 3,
+					"outlettype" : [ "int", "", "" ],
+					"parameter_enable" : 0,
+					"patching_rect" : [ 107.0, 309.0, 100.0, 22.0 ]
+				}
+
+			}
+, 			{
 				"box" : 				{
 					"hidden" : 1,
 					"id" : "obj-11",
@@ -23,7 +51,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 371.0, 146.0, 80.0, 22.0 ],
+					"patching_rect" : [ 344.0, 95.0, 80.0, 22.0 ],
 					"text" : "loadmess 0.5"
 				}
 
@@ -36,7 +64,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 106.0, 146.0, 70.0, 22.0 ],
+					"patching_rect" : [ 79.0, 95.0, 70.0, 22.0 ],
 					"text" : "loadmess 0"
 				}
 
@@ -51,7 +79,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 429.0, 313.0, 123.0, 22.0 ]
+					"patching_rect" : [ 239.0, 339.0, 123.0, 22.0 ]
 				}
 
 			}
@@ -64,7 +92,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 322.0, 313.0, 100.0, 22.0 ],
+					"patching_rect" : [ 212.0, 266.0, 100.0, 22.0 ],
 					"text_width" : 80.0
 				}
 
@@ -78,23 +106,8 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 217.0, 313.0, 100.0, 22.0 ],
+					"patching_rect" : [ 107.0, 266.0, 100.0, 22.0 ],
 					"text_width" : 74.0
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"attr" : "hi",
-					"displaymode" : 2,
-					"id" : "obj-3",
-					"maxclass" : "attrui",
-					"numinlets" : 1,
-					"numoutlets" : 1,
-					"outlettype" : [ "" ],
-					"parameter_enable" : 0,
-					"patching_rect" : [ 196.0, 244.0, 82.0, 22.0 ],
-					"text_width" : 33.0
 				}
 
 			}
@@ -110,7 +123,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 2,
 					"outlettype" : [ "jit_matrix", "" ],
-					"patching_rect" : [ 600.0, 66.0, 640.0, 360.0 ],
+					"patching_rect" : [ 467.0, 39.0, 640.0, 360.0 ],
 					"sync" : 1
 				}
 
@@ -122,7 +135,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 2,
 					"outlettype" : [ "jit_matrix", "" ],
-					"patching_rect" : [ 57.0, 507.0, 157.0, 22.0 ],
+					"patching_rect" : [ 30.0, 456.0, 157.0, 22.0 ],
 					"text" : "jit.gl.layer @blend_enable 0"
 				}
 
@@ -135,7 +148,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 57.0, 35.0, 70.0, 22.0 ],
+					"patching_rect" : [ 30.0, 8.0, 70.0, 22.0 ],
 					"text" : "loadmess 1"
 				}
 
@@ -145,10 +158,10 @@
 					"clipheight" : 40.0,
 					"data" : 					{
 						"clips" : [ 							{
-								"absolutepath" : "sunflower.mp4",
-								"filename" : "sunflower.mp4",
+								"absolutepath" : "chickens.mp4",
+								"filename" : "chickens.mp4",
 								"filekind" : "moviefile",
-								"id" : "u014002627",
+								"id" : "u406001951",
 								"loop" : 1,
 								"content_state" : 								{
 									"loop" : 1
@@ -167,7 +180,7 @@
 					"outlettype" : [ "jit_gl_texture", "", "dictionary" ],
 					"output_texture" : 1,
 					"parameter_enable" : 0,
-					"patching_rect" : [ 57.0, 90.0, 420.0, 41.0 ],
+					"patching_rect" : [ 30.0, 39.0, 420.0, 41.0 ],
 					"saved_attribute_attributes" : 					{
 						"candicane2" : 						{
 							"expression" : ""
@@ -211,7 +224,7 @@
 					"numoutlets" : 3,
 					"outlettype" : [ "int", "", "" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 217.0, 278.0, 100.0, 22.0 ]
+					"patching_rect" : [ 107.0, 231.0, 100.0, 22.0 ]
 				}
 
 			}
@@ -224,7 +237,7 @@
 					"numoutlets" : 3,
 					"outlettype" : [ "int", "", "" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 322.0, 278.0, 100.0, 22.0 ]
+					"patching_rect" : [ 212.0, 231.0, 100.0, 22.0 ]
 				}
 
 			}
@@ -232,12 +245,13 @@
 				"box" : 				{
 					"floatoutput" : 1,
 					"id" : "obj-13",
+					"listmode" : 1,
 					"maxclass" : "rslider",
 					"numinlets" : 2,
 					"numoutlets" : 2,
 					"outlettype" : [ "", "" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 106.0, 176.0, 284.0, 53.0 ],
+					"patching_rect" : [ 79.0, 125.0, 284.0, 53.0 ],
 					"size" : 1.0
 				}
 
@@ -245,20 +259,20 @@
 , 			{
 				"box" : 				{
 					"embedstate" : [ [ "adapt", 1 ], [ "bypass", 0 ], [ "enable", 1 ] ],
-					"filename" : "jit.fx.lineinterp.js",
+					"filename" : "jit.fx.ge.lineinterp.js",
 					"id" : "obj-72",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "jit_gl_texture" ],
-					"patching_rect" : [ 57.0, 389.0, 82.0, 22.0 ],
+					"patching_rect" : [ 30.0, 419.0, 99.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"parameter_enable" : 0
 					}
 ,
-					"text" : "jit.fx.lineinterp",
+					"text" : "jit.fx.ge.lineinterp",
 					"textfile" : 					{
-						"filename" : "jit.fx.lineinterp.js",
+						"filename" : "jit.fx.ge.lineinterp.js",
 						"flags" : 0,
 						"embed" : 0,
 						"autowatch" : 1
@@ -269,16 +283,31 @@
 			}
 , 			{
 				"box" : 				{
-					"attr" : "lo",
-					"displaymode" : 2,
+					"attr" : "range",
+					"displaymode" : 4,
 					"id" : "obj-2",
 					"maxclass" : "attrui",
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 106.0, 244.0, 82.0, 22.0 ],
-					"text_width" : 34.0
+					"patching_rect" : [ 79.0, 193.0, 217.0, 22.0 ],
+					"text_width" : 57.0
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"attr" : "rangemode",
+					"displaymode" : 1,
+					"id" : "obj-44",
+					"maxclass" : "attrui",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"parameter_enable" : 0,
+					"patching_rect" : [ 107.0, 339.0, 125.0, 22.0 ],
+					"text_width" : 86.0
 				}
 
 			}
@@ -308,22 +337,8 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-3", 0 ],
-					"source" : [ "obj-13", 1 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
 					"destination" : [ "obj-72", 0 ],
 					"source" : [ "obj-2", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-72", 0 ],
-					"source" : [ "obj-3", 0 ]
 				}
 
 			}
@@ -346,6 +361,27 @@
 					"destination" : [ "obj-9", 0 ],
 					"hidden" : 1,
 					"source" : [ "obj-4", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-72", 0 ],
+					"source" : [ "obj-44", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-44", 0 ],
+					"source" : [ "obj-45", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-13", 0 ],
+					"source" : [ "obj-47", 0 ]
 				}
 
 			}
@@ -392,8 +428,20 @@
 				"implicit" : 1
 			}
 , 			{
+				"name" : "chickens.mp4",
+				"bootpath" : "C74:/media/jitter",
+				"type" : "mpg4",
+				"implicit" : 1
+			}
+, 			{
 				"name" : "implicit.context.js",
 				"bootpath" : "C74:/packages/Jitter Tools/javascript",
+				"type" : "TEXT",
+				"implicit" : 1
+			}
+, 			{
+				"name" : "jit.fx.ge.lineinterp.js",
+				"bootpath" : "C74:/packages/Jitter Tools/code/fx/js",
 				"type" : "TEXT",
 				"implicit" : 1
 			}
@@ -419,18 +467,6 @@
 				"name" : "jit.fx.include.js",
 				"bootpath" : "C74:/packages/Jitter Tools/code/fx/js",
 				"type" : "TEXT",
-				"implicit" : 1
-			}
-, 			{
-				"name" : "jit.fx.lineinterp.js",
-				"bootpath" : "C74:/packages/Jitter Tools/code/fx/js",
-				"type" : "TEXT",
-				"implicit" : 1
-			}
-, 			{
-				"name" : "sunflower.mp4",
-				"bootpath" : "C74:/media/jitter",
-				"type" : "mpg4",
 				"implicit" : 1
 			}
  ],

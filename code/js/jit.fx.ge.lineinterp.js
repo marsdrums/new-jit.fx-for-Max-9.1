@@ -96,18 +96,11 @@ slab_composite.type = "float32";
 slab_composite.automatic = 0;
 fxobs.push(slab_composite);
 
-var lo = 0.0;
-declareattribute("lo", null, "setlo", 0);
-function setlo(v){ 
-	lo = v;
-	slab_threshold.param("lo", lo);
-}
-
-var hi = 0.5;
-declareattribute("hi", null, "sethi", 0);
-function sethi(v){ 
-	hi = v;
-	slab_threshold.param("hi", hi);
+var range = [0.0, 0.5];
+declareattribute("range", null, "setrange", 0);
+function setrange(){ 
+	range = [ arguments[0], arguments[1] ];
+	slab_threshold.param("range", range);
 }
 
 var dimmode = 0;
@@ -123,6 +116,13 @@ declareattribute("colormode", null, "setcolormode", 0);
 function setcolormode(v){ 
 	colormode = Math.max(0, Math.min(2, v));
 	shader_makeline.param("colormode", colormode);
+}
+
+var rangemode = 0;
+declareattribute("rangemode", null, "setrangemode", 0);
+function setrangemode(v){ 
+	rangemode = Math.max(0, Math.min(7, v));
+	slab_threshold.param("rangemode", rangemode);
 }
 
 var outputmode = 0;
