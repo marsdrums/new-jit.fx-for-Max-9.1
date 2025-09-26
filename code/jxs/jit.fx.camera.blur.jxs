@@ -1,0 +1,120 @@
+<jittershader name="jit.fx.transforn.blur">
+	<param name="tex0" type="int" default="0" />
+	<param name="randTex" type="int" default="1" />
+	<texture file="stbn_cos_scalar_tiled.png" type="float16" unit="1" rectangle="1" filter="none none" wrap="repeat repeat"/>	
+	<param name="uv" type="vec2" state="TEXCOORD" />
+	<param name="texMat" type="mat4" state="TEXTURE0_MATRIX" />
+	<param name="blur_amount" type="float" default="1" />
+	<param name="tile" type="vec2" default="0. 0." />
+	<param name="mode" type="int" default="0" />
+	<param name="texDim" type="vec2" state="TEXDIM0" />
+	<param name="deltaZoom" type="float" default="0.0" />
+	<param name="deltaTilt" type="float" default="0.0" />
+	<param name="deltaLookat" type="vec2" default="0.0 0.0" />
+	<language name="glsl" version="1.5">
+		<bind param="tex0" program="fp" />
+		<bind param="randTex" program="fp" />
+		<bind param="uv" program="vp" />
+		<bind param="texMat" program="vp" />
+		<bind param="blur_amount" program="fp" />
+		<bind param="tile" program="fp" />
+		<bind param="mode" program="fp" />
+		<bind param="texDim" program="fp" />
+		<bind param="deltaZoom" program="fp" />
+		<bind param="deltaTilt" program="fp" />
+		<bind param="deltaLookat" program="fp" />
+		<program name="vp" type="vertex"  >
+<![CDATA[
+#version 330 core
+
+in vec2 uv;
+uniform mat4 texMat;
+
+out jit_PerVertex {
+	vec2 uv;
+	vec2 normUV;
+} jit_out;
+
+void main(void) {
+	gl_Position = vec4(uv*2 - 1, 0, 1);
+	jit_out.uv = (texMat * vec4(uv,0,1)).xy;
+	jit_out.normUV = uv;
+}
+]]>
+</program>
+
+<program name="fp" type="fragment"  >
+<![CDATA[
+#version 330 core
+
+
+layout (location = 0) out vec4 outColor;
+
+uniform samplerJit0 tex0;
+uniform sampler2DRect randTex;
+uniform float blur_amount;
+uniform vec2 tile, texDim;
+uniform int mode;
+uniform float deltaZoom, deltaTilt;
+uniform vec2 deltaLookat;
+
+in jit_PerVertex {
+	vec2 uv;
+	vec2 normUV;
+} jit_in;
+
+vec2 car2pol(vec2 cart) {
+    float r = length(cart);              // distance from origin
+    float theta = atan(cart.y, cart.x);  // angle in radians
+    return vec2(r, theta);
+}
+
+vec2 pol2car(vec2 polar) {
+    float x = polar.x * cos(polar.y);  // r * cos(theta)
+    float y = polar.x * sin(polar.y);  // r * sin(theta)
+    return vec2(x, y);
+}
+
+vec4 blur5() {
+
+	float ratio = texDim.x / texDim.y;
+	vec2 snorm = (jit_in.normUV*2 - 1)*vec2(ratio, 1.0);
+	vec2 zoomBlur = snorm*abs(deltaZoom)*0.3;
+	vec2 shiftBlur = deltaLookat*vec2(ratio,-1);
+	vec2 direction = zoomBlur + shiftBlur;
+	float minDim = min(texDim.x, texDim.y);
+	float blurExtent = minDim*0.1;
+	direction *= vec2(blurExtent, -blurExtent);
+
+  vec4 color = vec4(0.0);
+  float randAmount = texelFetch(randTex, ivec2(mod(jit_in.uv, 128) + tile)).w*2;
+  vec2 off1 = vec2(1.3333333333333333) * direction * blur_amount * randAmount;
+  vec2 pol = car2pol(snorm);
+
+  float randAngle = blur_amount * randAmount * deltaTilt * 0.5 * 0.3;
+  vec2 angUV0 = pol2car(pol + vec2(0.0, randAngle));
+  vec2 angUV1 = pol2car(pol - vec2(0.0, randAngle));
+  angUV0.x /= ratio;
+  angUV0.y *= -1;
+  angUV0 = angUV0*0.5 + 0.5;
+  angUV1.x /= ratio;
+  angUV1.y *= -1;
+  angUV1 = angUV1*0.5 + 0.5;
+
+  color += texture(tex0, jit_in.uv) * 0.29411764705882354;
+  color += texture(tex0, jit_in.uv + (off1)) * 0.35294117647058826;
+  color += texture(tex0, jit_in.uv - (off1)) * 0.35294117647058826;
+  color += texture(tex0, angUV0*texDim) * 0.5;
+  color += texture(tex0, angUV1*texDim) * 0.5;
+  color *= 0.5;
+  return color; 
+}
+
+void main(void) {
+
+	outColor = blur5();
+}
+]]>
+</program>
+</language>
+</jittershader>
