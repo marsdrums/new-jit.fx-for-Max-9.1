@@ -1,21 +1,24 @@
-<jittershader name="jit.fx.cf.tiltshift.mask">
+<jittershader name="jit.fx.sobel">
 	<param name="tex0" type="int" default="0" />
 	<param name="uv" type="vec2" state="TEXCOORD" />
   <param name="mode" type="int" default="0" />
   <param name="center" type="vec2" default="0.0 0.0" />
   <param name="slope" type="float" default="1.0" />
+  <param name="cosangle" type="float" default="1.0" />
+  <param name="sinangle" type="float" default="0.0" />
 	<language name="glsl" version="1.5">
 		<bind param="tex0" program="fp" />
 		<bind param="uv" program="vp" />
     <bind param="mode" program="fp" />
-    <bind param="center" program="vp" />
+    <bind param="center" program="fp" />
     <bind param="slope" program="fp" />
+    <bind param="cosangle" program="fp" />
+    <bind param="sinangle" program="fp" />
     <program name="vp" type="vertex"  >
 <![CDATA[
 #version 330 core
 
 in vec2 uv;
-uniform vec2 center;
 
 out jit_PerVertex {
   vec2 snormUV;
@@ -23,7 +26,7 @@ out jit_PerVertex {
 
 void main(void) {
   gl_Position = vec4(uv*2 - 1, 0, 1);
-  jit_out.snormUV = gl_Position.xy - center;
+  jit_out.snormUV = gl_Position.xy;
 }
 ]]>
 </program>
@@ -35,8 +38,9 @@ void main(void) {
 layout (location = 0) out vec4 outColor;
 
 uniform samplerJit0 tex0;
-uniform float slope;
+uniform float slope, cosangle, sinangle;
 uniform int mode;
+uniform vec2 center;
 
 in jit_PerVertex {
   vec2 snormUV;
@@ -44,7 +48,17 @@ in jit_PerVertex {
 
 void main(void) 
 {
-  float dist = mode == 0 ? length(jit_in.snormUV) : abs(jit_in.snormUV.y);
+
+  float dist;
+
+  if(mode == 0){
+    vec2 p = jit_in.snormUV - center;
+    dist = dot(p,p);
+  } else {
+    mat2 R = mat2(cosangle, -sinangle, sinangle, cosangle);
+    dist = abs( (R * jit_in.snormUV - center).y );
+  }
+
   dist = pow(dist, slope);
   outColor = vec4(dist, dist, dist, 1.0);
 }

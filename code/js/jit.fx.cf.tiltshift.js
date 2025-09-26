@@ -40,6 +40,14 @@ function setslope(v){
 	slab_mask.param("slope", slope);
 }
 
+var angle = 0.0;
+declareattribute("angle", null, "setangle", 0);
+function setangle(v){ 
+	angle = v;	
+	slab_mask.param("cosangle", Math.cos(angle));
+	slab_mask.param("sinangle", Math.sin(angle));
+}
+
 var mode = 0;
 declareattribute("mode", null, "setmode", 0);
 function setmode(v){ 
